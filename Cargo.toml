@@ -1,0 +1,8 @@
+[package]
+name = "neural_network"
+version = "0.0.0"
+authors = ["usbalbin <albin9604@gmail.com>"]
+
+[dependencies]
+linear_algebra = { git = "https://github.com/usbalbin/linear_algebra.git" }
+rand = "0.4.1"
