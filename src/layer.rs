@@ -21,7 +21,7 @@ impl<T> Layer<T> {
         let weights = Matrix::generate(
             |_|
                 factor * distribution(),
-            node_count, input_count
+            input_count, node_count
         );
 
         Layer{
