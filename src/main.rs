@@ -17,38 +17,40 @@ fn example_or() {
         3, 1
     ]);
 
+    let samples = vec![
+        Sample {
+            in_data: Vector::from_vec(vec![0.0, 0.0, 0.0]),
+            expected_result: Vector::from_vec(vec![0.0])
+        },
+        Sample {
+            in_data: Vector::from_vec(vec![1.0, 1.0, 1.0]),
+            expected_result: Vector::from_vec(vec![ 1.0 ])
+        },
+        Sample {
+            in_data: Vector::from_vec(vec![0.0, 1.0, 0.0]),
+            expected_result: Vector::from_vec(vec![1.0]),
+        },
+        Sample {
+            in_data: Vector::from_vec(vec![0.0, 1.0, 1.0]),
+            expected_result: Vector::from_vec(vec![ 1.0 ]),
+        },
+        Sample {
+            in_data: Vector::from_vec(vec![0.0, 0.0, 0.0]),
+            expected_result: Vector::from_vec(vec![ 0.0 ]),
+        },
+        Sample {
+            in_data: Vector::from_vec(vec![1.0, 0.0, 1.0]),
+            expected_result: Vector::from_vec(vec![ 1.0 ]),
+        },
+        Sample {
+            in_data: Vector::from_vec(vec![1.0, 1.0, 0.0]),
+            expected_result: Vector::from_vec(vec![ 1.0 ])
+        }
+    ];
+
     loop {
         for _ in 0..10 {
-            n.learn(0.5, vec![
-                Sample {
-                    in_data: Vector::from_vec(vec![0.0, 0.0, 0.0]),
-                    expected_result: Vector::from_vec(vec![0.0])
-                },
-                    Sample {
-                        in_data: Vector::from_vec(vec![1.0, 1.0, 1.0]),
-                        expected_result: Vector::from_vec(vec![ 1.0 ])
-                },
-                Sample {
-                    in_data: Vector::from_vec(vec![0.0, 1.0, 0.0]),
-                    expected_result: Vector::from_vec(vec![1.0]),
-                },
-                Sample {
-                    in_data: Vector::from_vec(vec![0.0, 1.0, 1.0]),
-                    expected_result: Vector::from_vec(vec![ 1.0 ]),
-                },
-                Sample {
-                    in_data: Vector::from_vec(vec![0.0, 0.0, 0.0]),
-                    expected_result: Vector::from_vec(vec![ 0.0 ]),
-                },
-                Sample {
-                    in_data: Vector::from_vec(vec![1.0, 0.0, 1.0]),
-                    expected_result: Vector::from_vec(vec![ 1.0 ]),
-                },
-                Sample {
-                    in_data: Vector::from_vec(vec![1.0, 1.0, 0.0]),
-                    expected_result: Vector::from_vec(vec![ 1.0 ])
-                }
-            ]);
+            n.learn(0.5, &samples);
         }
         println!("{} {}", n.feed_forward(Vector::from_vec(vec![0.0, 0.0, 0.0])), n.feed_forward(Vector::from_vec(vec![0.0, 1.0, 0.0])));
 

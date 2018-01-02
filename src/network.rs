@@ -18,7 +18,14 @@ pub struct Network<T> {
     layers: Vec<Layer<T>>
 }
 
+///
+/// Artificial neural network
+///
 impl Network<f64> {
+
+
+    /// Create new network, with layer_sizes.first() inputs, layer_sizes.last() outputs
+    /// and layer_sizes[1:] size for every corresponding hidden layer.
     pub fn new(layer_sizes: &[usize]) -> Network<f64> {
         assert!(layer_sizes.len() > 1);
 
@@ -38,6 +45,7 @@ impl Network<f64> {
         }
     }
 
+    /// feed_forward() runs the input through the network returning its results
     pub fn feed_forward(&self, input: Vector<f64>) -> Vector<f64> {
         assert_eq!(input.len(), self.layers[0].weights.get_row_count());
 
@@ -49,7 +57,7 @@ impl Network<f64> {
         data
     }
 
-    fn back_propogate(&self, sample: Sample<f64>, gradients_weights: &mut Vec<Matrix<f64>>, gradients_biases: &mut Vec<Vector<f64>>) {
+    fn back_propogate(&self, sample: &Sample<f64>, gradients_weights: &mut Vec<Matrix<f64>>, gradients_biases: &mut Vec<Vector<f64>>) {
         assert_eq!(gradients_biases.len(), self.layers.len());
         assert_eq!(gradients_weights.len(), self.layers.len());
 
@@ -131,7 +139,9 @@ impl Network<f64> {
         }
     }
 
-    pub fn learn(&mut self, learning_rate: f64, samples: Vec<Sample<f64>>) {
+    /// learn() trains network with given samples at specified rate.
+    /// great care needs to be taken when selecting learning_rate
+    pub fn learn(&mut self, learning_rate: f64, samples: &Vec<Sample<f64>>) {
         let mut gradients_biases = Vec::with_capacity(self.layers.len());
         let mut gradients_weights = Vec::with_capacity(self.layers.len());
 
