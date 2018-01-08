@@ -1,8 +1,9 @@
 [package]
 name = "neural_network"
-version = "0.0.0"
+version = "0.1.1"
 authors = ["usbalbin <albin9604@gmail.com>"]
 
 [dependencies]
-linear_algebra = { git = "https://github.com/usbalbin/linear_algebra.git" }
+linear_algebra = { git = "https://github.com/usbalbin/linear_algebra.git", branch = "OpenCL-accelerated" }
 rand = "0.4.1"
+ocl = "0.16.0"

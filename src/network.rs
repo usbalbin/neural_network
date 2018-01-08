@@ -1,32 +1,35 @@
 
 extern crate rand;
 extern crate linear_algebra;
+extern crate ocl;
+
+
 
 use self::rand::distributions::{ Normal, IndependentSample };
 
 use self::linear_algebra::vector::*;
 use self::linear_algebra::matrix::*;
+use traits::NetworkParameter;
 
 use layer::Layer;
 
-pub struct Sample<T> {
+pub struct Sample<T: NetworkParameter> {
     pub in_data: Vector<T>,
     pub expected_result: Vector<T>
 }
 
-pub struct Network<T> {
+pub struct Network<T: NetworkParameter> {
     layers: Vec<Layer<T>>
 }
 
 ///
 /// Artificial neural network
 ///
-impl Network<f64> {
-
+impl<T: NetworkParameter> Network<T> {
 
     /// Create new network, with layer_sizes.first() inputs, layer_sizes.last() outputs
-    /// and layer_sizes[1:] size for every corresponding hidden layer.
-    pub fn new(layer_sizes: &[usize]) -> Network<f64> {
+    /// and layer_sizes[1..] size for every corresponding hidden layer.
+    pub fn new(layer_sizes: &[usize]) -> Network<T> {
         assert!(layer_sizes.len() > 1);
 
         let seed: &[_] = &[1, 2, 3, 4];
@@ -37,7 +40,7 @@ impl Network<f64> {
         let mut layers = Vec::with_capacity(layer_sizes.len());
         for data in layer_sizes.windows(2) {
             let (input_count, node_count) = (data[0], data[1]);
-            layers.push(Layer::<f64>::new(&mut distribution, input_count, node_count));
+            layers.push(Layer::new(&mut distribution, input_count, node_count));
         }
 
         Network {
@@ -46,18 +49,18 @@ impl Network<f64> {
     }
 
     /// feed_forward() runs the input through the network returning its results
-    pub fn feed_forward(&self, input: Vector<f64>) -> Vector<f64> {
+    pub fn feed_forward(&self, input: Vector<T>) -> Vector<T> {
         assert_eq!(input.len(), self.layers[0].weights.get_row_count());
 
         let mut data = input;
         for layer in self.layers.iter() {
-            data = activation_func_in_place(&(&data * &layer.weights) + &layer.biases);
+            data = activation_func_in_place((&data * &layer.weights) + &layer.biases);
         }
 
         data
     }
 
-    fn back_propogate(&self, sample: &Sample<f64>, gradients_weights: &mut Vec<Matrix<f64>>, gradients_biases: &mut Vec<Vector<f64>>) {
+    fn back_propagate(&self, sample: &Sample<T>, gradients_weights: &mut Vec<Matrix<T>>, gradients_biases: &mut Vec<Vector<T>>) {
         assert_eq!(gradients_biases.len(), self.layers.len());
         assert_eq!(gradients_weights.len(), self.layers.len());
 
@@ -68,7 +71,7 @@ impl Network<f64> {
         {
             let ref mut first_layer = self.layers.first().unwrap();
 
-            let raw = &(&sample.in_data * &first_layer.weights) + &first_layer.biases;
+            let raw = (&sample.in_data * &first_layer.weights) + &first_layer.biases;
 
             activations.push(
                 activation_func(&raw)
@@ -77,7 +80,7 @@ impl Network<f64> {
             raw_data.push(raw);
 
             for layer in self.layers.iter().skip(1) {
-                let raw = &(activations.last().unwrap() * &layer.weights) + &layer.biases;
+                let raw = (activations.last().unwrap() * &layer.weights) + &layer.biases;
 
                 activations.push(
                     activation_func(&raw)
@@ -129,69 +132,114 @@ impl Network<f64> {
         }
     }
 
-    fn apply_gradients(&mut self, learning_rate: f64, gradients_weights: Vec<Matrix<f64>>, gradients_biases: Vec<Vector<f64>>) {
-        for (layer, gradient_bias) in self.layers.iter_mut().zip(gradients_biases.iter()) {
+    fn apply_gradients(&mut self, learning_rate: T, gradients_weights: Vec<Matrix<T>>, gradients_biases: Vec<Vector<T>>) {
+        for (layer, gradient_bias) in self.layers.iter_mut().zip(gradients_biases.into_iter()) {
             layer.biases -= &(gradient_bias * learning_rate);
         }
 
-        for (layer, gradient_weight) in self.layers.iter_mut().zip(gradients_weights.iter()) {
+        for (layer, gradient_weight) in self.layers.iter_mut().zip(gradients_weights.into_iter()) {
             layer.weights -= &(gradient_weight * learning_rate);
         }
     }
 
     /// learn() trains network with given samples at specified rate.
     /// great care needs to be taken when selecting learning_rate
-    pub fn learn(&mut self, learning_rate: f64, samples: &Vec<Sample<f64>>) {
+    pub fn learn(&mut self, learning_rate: T, samples: &Vec<Sample<T>>) {
         let mut gradients_biases = Vec::with_capacity(self.layers.len());
         let mut gradients_weights = Vec::with_capacity(self.layers.len());
 
 
         for i in 0..self.layers.len() {
-            gradients_biases.push(Vector::new(0.0, self.layers[i].biases.len()));
-            gradients_weights.push(Matrix::new(0.0,
+            gradients_biases.push(Vector::new(T::zero(), self.layers[i].biases.len()));
+            gradients_weights.push(Matrix::new(T::zero(),
                 self.layers[i].weights.get_row_count(),
                 self.layers[i].weights.get_col_count()
             ));
         }
 
         for sample in samples {
-            self.back_propogate(sample, &mut gradients_weights, &mut gradients_biases);
+            self.back_propagate(sample, &mut gradients_weights, &mut gradients_biases);
         }
 
         self.apply_gradients(learning_rate, gradients_weights, gradients_biases);
     }
 }
 
-
-
-
-fn activation_func_in_place(mut data: Vector<f64>) -> Vector<f64> {
-    data.map_mut(
-        |e: &mut f64|
-            *e = sigmoid(*e)
-    );
-    data
+macro_rules! helper {
+    ($kernel:ident, $t:ty) => ();
+    ($kernel:ident, $t:ty, $arg:expr) => {
+        $kernel = $kernel.arg_buf_named::<$t, ocl::Buffer<$t>>($arg, None);
+    };
+    ($kernel:ident, $t:ty, $arg:expr, $($args:expr),+) => {
+        helper!($kernel, $t, $arg);//$kernel.set_arg_buf_named::<$t, ocl::Buffer<$t>>($arg, None).unwrap();
+        helper!($kernel, $t, $($args),*)
+    };
 }
 
-fn activation_func(data: &Vector<f64>) -> Vector<f64> {
-    data.map(
-        |e: &f64|
-            sigmoid(*e)
-    )
+macro_rules! kernel_helper {
+    ($kernel_name:expr, $t:ty, $($args:expr),* ) => {
+
+        static mut KERNEL: Option<ocl::Kernel> = None;
+        static mut INIT_ONCE: ::std::sync::Once = ::std::sync::ONCE_INIT;
+
+        unsafe {
+            INIT_ONCE.call_once(
+                || {
+                    KERNEL = Some(
+                        {
+                            let mut kernel = linear_algebra::create_kernel::<$t>($kernel_name);
+                            helper!(kernel, $t, $($args),*);
+                            kernel
+                        }
+                    );
+                }
+            )
+        }
+    };
 }
 
-fn activation_func_prime(data: &Vector<f64>) -> Vector<f64> {
-    data.map(
-        |e: &f64|
-            sigmoid_prime(*e)
-    )
+fn activation_func_in_place<T: NetworkParameter>(mut data: Vector<T>) -> Vector<T> {
+    kernel_helper!("sigmoid_in_place", T, "C");
+
+    unsafe {
+        let kernel = KERNEL.as_mut().unwrap();
+
+        kernel.set_arg_buf_named("C", Some(data.get_buffer_mut())).unwrap();
+
+        kernel.cmd().gws(data.len()).enq().unwrap();
+
+        data
+    }
 }
 
-fn sigmoid(x: f64) -> f64 {
-    1.0 / (1.0 + (-x).exp())
+fn activation_func<T: NetworkParameter>(data: &Vector<T>) -> Vector<T> {
+    kernel_helper!("sigmoid", T, "C", "B");
+
+    unsafe {
+        let mut res = Vector::uninitialized(data.len());
+        let kernel = KERNEL.as_mut().unwrap();
+
+        kernel.set_arg_buf_named("C", Some(res.get_buffer_mut())).unwrap();
+        kernel.set_arg_buf_named("B", Some(data.get_buffer())).unwrap();
+
+        kernel.cmd().gws(data.len()).enq().unwrap();
+
+        res
+    }
 }
 
-fn sigmoid_prime(x: f64) -> f64 {
-    let sig = sigmoid(x);
-    sig * (1.0 - sig)
+fn activation_func_prime<T: NetworkParameter>(data: &Vector<T>) -> Vector<T> {
+    kernel_helper!("sigmoid_prime", T, "C", "B");
+
+    unsafe {
+        let mut res = Vector::uninitialized(data.len());
+        let kernel = KERNEL.as_mut().unwrap();
+
+        kernel.set_arg_buf_named("C", Some(res.get_buffer_mut())).unwrap();
+        kernel.set_arg_buf_named("B", Some(data.get_buffer())).unwrap();
+
+        kernel.cmd().gws(data.len()).enq().unwrap();
+
+        res
+    }
 }
