@@ -7,6 +7,7 @@ extern crate ocl;
 
 use self::rand::distributions::{ Normal, IndependentSample };
 
+use self::linear_algebra::util::*;
 use self::linear_algebra::vector::*;
 use self::linear_algebra::matrix::*;
 use traits::NetworkParameter;
@@ -162,6 +163,59 @@ impl<T: NetworkParameter> Network<T> {
         }
 
         self.apply_gradients(learning_rate, gradients_weights, gradients_biases);
+    }
+
+    /// Save Network to specified path.
+    /// NOTE! The file will be encoded in the current systems endianness
+    ///
+    /// ---- Formated like ----
+    /// layer_count,
+    /// layers[0],
+    /// ...
+    /// ...
+    /// layers[layerCount - 1]
+    ///
+    pub fn save(&self, path: &str) -> Result<(), ::std::io::Error> {
+        use std::fs::File;
+
+        let mut file = File::create(path)?;
+
+        write_u64(&mut file,self.layers.len() as u64)?;
+
+        for layer in self.layers.iter() {
+            layer.write_to_file(&mut file)?;
+        }
+        Ok(())
+    }
+
+    /// Open Network from specified path.
+    /// NOTE! The file will be interpreted in the current systems endianness
+    ///
+    /// ---- Formated like ----
+    /// layer_count,
+    /// layers[0],
+    /// ...
+    /// ...
+    /// layers[layerCount - 1]
+    ///
+    pub unsafe fn open(path: &str) -> Result<Network<T>, ::std::io::Error> {
+        use std::fs::File;
+
+        let mut file = File::open(path).expect("Failed to open file");
+
+        let layer_count = read_u64(&mut file)?;
+
+        let mut layers = Vec::with_capacity(layer_count as usize);
+
+        for _ in 0..layer_count {
+            layers.push(
+                Layer::<T>::read_from_file(&mut file)?
+            );
+        }
+
+        Ok(Network {
+            layers
+        })
     }
 }
 

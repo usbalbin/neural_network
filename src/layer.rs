@@ -30,4 +30,30 @@ impl<T: NetworkParameter> Layer<T> {
             weights
         }
     }
+
+    /// Save Layer to specified path.
+    /// NOTE! The file will be encoded in the current systems endianness
+    ///
+    /// ---- Formated like ----
+    /// biases,
+    /// weights
+    ///
+    pub fn write_to_file(&self, file: &mut ::std::fs::File) -> Result<(), ::std::io::Error> {
+        self.biases.write_to_file(file)?;
+        self.weights.write_to_file(file)
+    }
+
+    /// Open Layer from specified path.
+    /// NOTE! The file will be interpreted in the current systems endianness
+    ///
+    /// ---- Formated like ----
+    /// biases,
+    /// weights
+    ///
+    pub unsafe fn read_from_file(file: &mut ::std::fs::File) -> Result<Layer<T>, ::std::io::Error> {
+        Ok(Layer {
+            biases: Vector::<T>::read_from_file(file)?,
+            weights: Matrix::<T>::read_from_file(file)?
+        })
+    }
 }
