@@ -20,7 +20,7 @@ fn test_save_open() {
 
     let n = example_or::<TestType>();
     assert_simple_or(&n);
-    n.save(path);
+    n.save(path).unwrap();
 
     let n = unsafe { Network::<TestType>::open(path).unwrap() };
     assert_simple_or(&n);

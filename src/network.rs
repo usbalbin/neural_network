@@ -253,8 +253,7 @@ macro_rules! kernel_helper {
 }
 
 fn activation_func_in_place<T: NetworkParameter>(mut data: Vector<T>) -> Vector<T> {
-    kernel_helper!("sigmoid_in_place", T, "C");
-
+    kernel_helper!(&format!("{}_{}", T::type_to_str(), "sigmoid_in_place"), T, "C");
     unsafe {
         let kernel = KERNEL.as_mut().unwrap();
 
@@ -267,7 +266,7 @@ fn activation_func_in_place<T: NetworkParameter>(mut data: Vector<T>) -> Vector<
 }
 
 fn activation_func<T: NetworkParameter>(data: &Vector<T>) -> Vector<T> {
-    kernel_helper!("sigmoid", T, "C", "B");
+    kernel_helper!(&format!("{}_{}", T::type_to_str(), "sigmoid"), T, "C", "B");
 
     unsafe {
         let mut res = Vector::uninitialized(data.len());
@@ -283,7 +282,7 @@ fn activation_func<T: NetworkParameter>(data: &Vector<T>) -> Vector<T> {
 }
 
 fn activation_func_prime<T: NetworkParameter>(data: &Vector<T>) -> Vector<T> {
-    kernel_helper!("sigmoid_prime", T, "C", "B");
+    kernel_helper!(&format!("{}_{}", T::type_to_str(), "sigmoid_prime"), T, "C", "B");
 
     unsafe {
         let mut res = Vector::uninitialized(data.len());

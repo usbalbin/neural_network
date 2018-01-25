@@ -55,8 +55,8 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
 name = "linear_algebra"
-version = "0.2.13"
-source = "git+https://github.com/usbalbin/linear_algebra.git?branch=OpenCL-accelerated#b54145ff416160a992a5d4c6e52ad1f61bbb6783"
+version = "0.2.14"
+source = "git+https://github.com/usbalbin/linear_algebra.git?branch=OpenCL-accelerated#e7bcbfe8e9957c50f7c167a99c8c1ece305540d1"
 dependencies = [
  "lazy_static 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "ocl 0.16.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -66,7 +66,7 @@ dependencies = [
 name = "neural_network"
 version = "0.1.1"
 dependencies = [
- "linear_algebra 0.2.13 (git+https://github.com/usbalbin/linear_algebra.git?branch=OpenCL-accelerated)",
+ "linear_algebra 0.2.14 (git+https://github.com/usbalbin/linear_algebra.git?branch=OpenCL-accelerated)",
  "ocl 0.16.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "rand 0.4.2 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
@@ -253,7 +253,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 "checksum futures 0.1.18 (registry+https://github.com/rust-lang/crates.io-index)" = "0bab5b5e94f5c31fc764ba5dd9ad16568aae5d4825538c01d6bca680c9bf94a7"
 "checksum lazy_static 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)" = "c8f31047daa365f19be14b47c29df4f7c3b581832407daabe6ae77397619237d"
 "checksum libc 0.2.36 (registry+https://github.com/rust-lang/crates.io-index)" = "1e5d97d6708edaa407429faa671b942dc0f2727222fb6b6539bf1db936e4b121"
-"checksum linear_algebra 0.2.13 (git+https://github.com/usbalbin/linear_algebra.git?branch=OpenCL-accelerated)" = "<none>"
+"checksum linear_algebra 0.2.14 (git+https://github.com/usbalbin/linear_algebra.git?branch=OpenCL-accelerated)" = "<none>"
 "checksum nodrop 0.1.12 (registry+https://github.com/rust-lang/crates.io-index)" = "9a2228dca57108069a5262f2ed8bd2e82496d2e074a06d1ccc7ce1687b6ae0a2"
 "checksum num 0.1.41 (registry+https://github.com/rust-lang/crates.io-index)" = "cc4083e14b542ea3eb9b5f33ff48bd373a92d78687e74f4cc0a30caeb754f0ca"
 "checksum num-bigint 0.1.41 (registry+https://github.com/rust-lang/crates.io-index)" = "bdc1494b5912f088f260b775799468d9b9209ac60885d8186a547a0476289e23"
