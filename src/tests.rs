@@ -78,7 +78,7 @@ fn example_or<T>() -> Network<T>
         }
     ];
 
-    for _ in 0..70 {
+    for _ in 0..68 {
         n.learn(T::from_f64(0.5), &samples);
     }
     n
@@ -88,16 +88,21 @@ fn assert_simple_or<T: NetworkParameter + PartialOrd>(n: &Network<T>) {
     let _0 = T::zero();
     let _1 = T::one();
 
-    let high = T::from_f64(0.9);
-    let low = T::from_f64(0.1);
+    let low = |res: T| res < T::from_f64(0.1);
+    let hi = |res: T| !(res < T::from_f64(0.1));
+
+    test(vec![_0, _0, _0], n, &low);
+    test(vec![_0, _0, _1], n, &hi);
+    test(vec![_0, _1, _0], n, &hi);
+    test(vec![_0, _1, _1], n, &hi);
+    test(vec![_1, _0, _0], n, &hi);
+    test(vec![_1, _0, _1], n, &hi);
+    test(vec![_1, _1, _0], n, &hi);
+    test(vec![_1, _1, _1], n, &hi);
+}
 
 
-    assert!(n.feed_forward(Vector::from_vec(vec![_0, _0, _0])).to_vec()[0] < low);
-    assert!(!(n.feed_forward(Vector::from_vec(vec![_0, _0, _1])).to_vec()[0] < high));
-    assert!(!(n.feed_forward(Vector::from_vec(vec![_0, _1, _0])).to_vec()[0] < high));
-    assert!(!(n.feed_forward(Vector::from_vec(vec![_0, _1, _1])).to_vec()[0] < high));
-    assert!(!(n.feed_forward(Vector::from_vec(vec![_1, _0, _0])).to_vec()[0] < high));
-    assert!(!(n.feed_forward(Vector::from_vec(vec![_1, _0, _1])).to_vec()[0] < high));
-    assert!(!(n.feed_forward(Vector::from_vec(vec![_1, _1, _0])).to_vec()[0] < high));
-    assert!(!(n.feed_forward(Vector::from_vec(vec![_1, _1, _1])).to_vec()[0] < high));
+fn test<F: Fn(T) -> bool, T: NetworkParameter + PartialOrd>(input: Vec<T>, n: &Network<T>, p: &F) {
+    let res = n.feed_forward(Vector::from_vec(input.clone())).to_vec()[0];
+    assert!(p(res), "{:?} -> {:?}", input, res);
 }
