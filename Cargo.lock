@@ -56,7 +56,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 [[package]]
 name = "linear_algebra"
 version = "0.2.14"
-source = "git+https://github.com/usbalbin/linear_algebra.git?branch=OpenCL-accelerated#e7bcbfe8e9957c50f7c167a99c8c1ece305540d1"
+source = "git+https://github.com/usbalbin/linear_algebra.git?branch=OpenCL-accelerated#09dbc6486048ec18c3286fbd0fbb5259f4ca229c"
 dependencies = [
  "lazy_static 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "ocl 0.16.0 (registry+https://github.com/rust-lang/crates.io-index)",

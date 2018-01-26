@@ -5,6 +5,7 @@ use self::linear_algebra::vector::Vector;
 use self::linear_algebra::matrix::Matrix;
 use traits::NetworkParameter;
 
+/// Layer of neurons with corresponding biases and weights
 pub struct Layer<T: NetworkParameter> {
     pub biases: Vector<T>,
     pub weights: Matrix<T>
