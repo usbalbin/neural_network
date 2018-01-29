@@ -17,6 +17,7 @@ pub trait NetworkParameter:
 
 pub trait Parameter: self::linear_algebra::traits::Parameter {
     fn from_f64(x: f64) -> Self;
+	fn from_usize(x: usize) -> Self;
     fn zero() -> Self;
 	fn one() -> Self;
 }
@@ -26,6 +27,7 @@ macro_rules! impl_from_f64 {
     ($( $ty:ident ),+) => {
         $( impl Parameter for $ty {
             fn from_f64(x: f64) -> $ty { x as $ty }
+            fn from_usize(x: usize) -> $ty { x as $ty }
             fn zero() -> $ty { 0 as $ty }
 			fn one() -> $ty { 1 as $ty }
         } 

@@ -10,14 +10,20 @@ use self::rand::distributions::{ Normal, IndependentSample };
 use self::linear_algebra::util::*;
 use self::linear_algebra::vector::*;
 use self::linear_algebra::matrix::*;
+use self::linear_algebra::traits::Real;
 use traits::NetworkParameter;
 
+
 use layer::Layer;
+
+use self::linear_algebra::get_cl_data;
 
 pub struct Sample<T: NetworkParameter> {
     pub in_data: Vector<T>,
     pub expected_result: Vector<T>
 }
+
+use ::std::ops::Div;
 
 pub struct Network<T: NetworkParameter> {
     layers: Vec<Layer<T>>
@@ -26,7 +32,7 @@ pub struct Network<T: NetworkParameter> {
 ///
 /// Artificial neural network
 ///
-impl<T: NetworkParameter> Network<T> {
+impl<T: NetworkParameter + ::std::iter::Sum<T>> Network<T> {
 
     /// Create new network, with layer_sizes.first() inputs, layer_sizes.last() outputs
     /// and layer_sizes[1..] size for every corresponding hidden layer.
@@ -219,6 +225,102 @@ impl<T: NetworkParameter> Network<T> {
     }
 }
 
+impl<T> Network<T>
+    where T: NetworkParameter + Real + ::std::cmp::PartialOrd + ::std::iter::Sum + Div<T, Output=T> + ::std::ops::Neg<Output=T>
+{
+    /// Returns (avg, min, max)
+    pub fn validate(&self, samples: &Vec<Sample<T>>) -> (T, T, T)
+    {
+        let mut min: T = ::traits::Parameter::zero();
+        let mut max: T = ::traits::Parameter::one();
+        let mut avg: T = ::traits::Parameter::zero();
+
+        for sample in samples.iter() {
+            let val = self.validate_sample(sample);
+            if val < min {
+                min = val;
+            }
+            if max < val {
+                max = val;
+            }
+            avg += val;
+        }
+
+        let avg = avg / T::from_usize(samples.len());
+        (avg, min, max)
+    }
+
+    /// Validate how well expected output matches with the computed
+    /// Returns number between 0.0 and 1.0, where 1.0 means they match perfectly
+    pub fn validate_sample(&self, sample: &Sample<T>) -> T {
+        let out = self.feed_forward(sample.in_data.clone());
+        let expected_result = &sample.expected_result;
+
+        Self::validate_sample_helper(out, expected_result)
+    }
+
+    /// Validate how well two network outputs match
+    /// Returns number between 0.0 and 1.0, where 1.0 means they match perfectly
+    pub(crate) fn validate_sample_helper(a: Vector<T>, b: &Vector<T>) -> T {
+        assert_eq!(a.len(), b.len());
+
+        static mut KERNEL: Option<ocl::Kernel> = None;
+        static mut INIT_ONCE: ::std::sync::Once = ::std::sync::ONCE_INIT;
+
+        unsafe {
+            INIT_ONCE.call_once(
+                || {
+                    KERNEL = Some(
+                        linear_algebra::create_kernel::<T>(&format!("{}_{}", T::type_to_str(), "validate_sample"))
+                            .arg_buf_named::<T, ocl::Buffer<T>>("data", None)
+                            .arg_buf_named::<T, ocl::Buffer<T>>("expected_data", None)
+                            .arg_buf_named::<T, ocl::Buffer<T>>("results", None)
+                            .arg_scl_named::<i32>("count", None)
+                    );
+                }
+            )
+        }
+
+
+        let (queue, kernel_params) = get_cl_data::<T>();
+
+        let global_work_size = kernel_params.global_work_size;
+        let work_group_size = kernel_params.work_group_size;
+        let work_group_count = global_work_size / work_group_size;
+
+        if a.len() <= work_group_count { // No need to reduce?
+            let res: T = a.to_vec().iter().zip(b.to_vec().iter()).map(|(a, b)|
+                if abs_diff(*a, *b) > T::from_f64(0.5) {
+                    ::traits::Parameter::zero()
+                } else {
+                    ::traits::Parameter::one()
+                }
+            ).sum();
+            return res / T::from_usize(a.len())
+        }
+
+        unsafe {
+            let kernel = KERNEL.as_mut().unwrap();
+            let mut tmp = Vector::<T>::uninitialized_lock_free(work_group_count, queue);
+
+            kernel.set_arg_buf_named("data", Some(a.get_buf())).unwrap();
+            kernel.set_arg_buf_named("expected_data", Some(b.get_buf())).unwrap();
+            kernel.set_arg_buf_named("results", Some(tmp.get_buf_mut())).unwrap();
+            kernel.set_arg_scl_named("count", a.len() as i32).unwrap();
+
+            kernel.cmd()
+                .gws(global_work_size)
+                .lws(work_group_size)
+                .enq()
+                .unwrap();
+            let sum = tmp.to_vec().into_iter().sum::<T>();
+            let d = T::from_usize(a.len());
+
+            sum / d // Normalize to range 0.0-1.0
+        }
+    }
+}
+
 macro_rules! helper {
     ($kernel:ident, $t:ty) => ();
     ($kernel:ident, $t:ty, $arg:expr) => {
@@ -294,5 +396,14 @@ fn activation_func_prime<T: NetworkParameter>(data: &Vector<T>) -> Vector<T> {
         kernel.cmd().gws(data.len()).enq().unwrap();
 
         res
+    }
+}
+
+fn abs_diff<T: NetworkParameter + ::std::ops::Sub<T, Output=T> + ::std::ops::Neg<Output=T> + ::std::cmp::PartialOrd>(a: T, b: T) -> T {
+    let diff = a - b;
+    if diff < T::zero() {
+        -diff
+    } else {
+        diff
     }
 }
