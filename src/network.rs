@@ -10,8 +10,8 @@ use self::rand::distributions::{ Normal, IndependentSample };
 use self::linear_algebra::util::*;
 use self::linear_algebra::vector::*;
 use self::linear_algebra::matrix::*;
-use self::linear_algebra::traits::Real;
-use traits::NetworkParameter;
+
+use traits::{ NetworkParameter, RealParameter };
 
 
 use layer::Layer;
@@ -226,14 +226,14 @@ impl<T: NetworkParameter + ::std::iter::Sum<T>> Network<T> {
 }
 
 impl<T> Network<T>
-    where T: NetworkParameter + Real + ::std::cmp::PartialOrd + ::std::iter::Sum + Div<T, Output=T> + ::std::ops::Neg<Output=T>
+    where T: RealParameter + ::std::cmp::PartialOrd + ::std::iter::Sum + Div<T, Output=T> + ::std::ops::Neg<Output=T>
 {
     /// Returns (avg, min, max)
     pub fn validate(&self, samples: &Vec<Sample<T>>) -> (T, T, T)
     {
-        let mut min: T = ::traits::Parameter::zero();
-        let mut max: T = ::traits::Parameter::one();
-        let mut avg: T = ::traits::Parameter::zero();
+        let mut min: T = NetworkParameter::zero();
+        let mut max: T = NetworkParameter::one();
+        let mut avg: T = NetworkParameter::zero();
 
         for sample in samples.iter() {
             let val = self.validate_sample(sample);
@@ -291,9 +291,9 @@ impl<T> Network<T>
         if a.len() <= work_group_count { // No need to reduce?
             let res: T = a.to_vec().iter().zip(b.to_vec().iter()).map(|(a, b)|
                 if abs_diff(*a, *b) > T::from_f64(0.5) {
-                    ::traits::Parameter::zero()
+                    NetworkParameter::zero()
                 } else {
-                    ::traits::Parameter::one()
+                    NetworkParameter::one()
                 }
             ).sum();
             return res / T::from_usize(a.len())

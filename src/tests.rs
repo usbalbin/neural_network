@@ -2,9 +2,7 @@ extern crate linear_algebra;
 
 
 type TestType = f32;
-use traits::NetworkParameter;
-
-use self::linear_algebra::traits::Real;
+use traits::{ NetworkParameter, RealParameter };
 
 use network::Sample;
 
@@ -49,7 +47,7 @@ fn test_save_open() {
 /// Simple example usage of neural network for calculate OR on 3 inputs
 fn example_or<T>() -> Network<T>
     where T:
-    NetworkParameter + Real +
+    RealParameter +
     ::std::ops::Div<T, Output=T> +
     ::std::fmt::Display +
     ::std::cmp::PartialOrd +
@@ -59,8 +57,8 @@ fn example_or<T>() -> Network<T>
     let mut n = Network::new(&[
         3, 1
     ]);
-    let _0: T = ::traits::Parameter::zero();
-    let _1: T = ::traits::Parameter::one();
+    let _0: T = NetworkParameter::zero();
+    let _1: T = NetworkParameter::one();
 
     let samples = vec![
         Sample {
