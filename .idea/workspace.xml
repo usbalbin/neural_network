@@ -2,11 +2,7 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="22cd30bc-7ca6-4ea5-bc5e-bbf98d779efa" name="Default" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
-      <change beforePath="$PROJECT_DIR$/Cargo.lock" afterPath="$PROJECT_DIR$/Cargo.lock" />
-      <change beforePath="$PROJECT_DIR$/src/extra_kernels.cl" afterPath="$PROJECT_DIR$/src/extra_kernels.cl" />
       <change beforePath="$PROJECT_DIR$/src/network.rs" afterPath="$PROJECT_DIR$/src/network.rs" />
-      <change beforePath="$PROJECT_DIR$/src/traits.rs" afterPath="$PROJECT_DIR$/src/traits.rs" />
     </list>
     <ignored path="$PROJECT_DIR$/target/" />
     <ignored path="$PROJECT_DIR$/out/" />
@@ -42,8 +38,8 @@
       <file leaf-file-name="network.rs" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/src/network.rs">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="285">
-              <caret line="370" column="5" lean-forward="true" selection-start-line="370" selection-start-column="5" selection-end-line="370" selection-end-column="5" />
+            <state relative-caret-position="242">
+              <caret line="210" column="40" lean-forward="false" selection-start-line="210" selection-start-column="40" selection-end-line="210" selection-end-column="40" />
               <folding>
                 <element signature="e#1679#1943#0" expanded="false" />
                 <element signature="e#2073#4441#0" expanded="false" />
@@ -52,7 +48,6 @@
                 <element signature="e#5826#6077#0" expanded="false" />
                 <element signature="e#6145#6394#0" expanded="false" />
                 <element signature="e#6400#6657#0" expanded="false" />
-                <element signature="e#6733#7148#0" expanded="false" />
               </folding>
             </state>
           </provider>
@@ -107,7 +102,7 @@
         <entry file="file://$PROJECT_DIR$/src/extra_kernels.cl">
           <provider selected="true" editor-type-id="text-editor">
             <state relative-caret-position="295">
-              <caret line="44" column="0" lean-forward="true" selection-start-line="44" selection-start-column="0" selection-end-line="44" selection-end-column="0" />
+              <caret line="44" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="65" selection-end-column="0" />
               <folding />
             </state>
           </provider>
@@ -413,7 +408,6 @@
             <element signature="e#5826#6077#0" expanded="false" />
             <element signature="e#6145#6394#0" expanded="false" />
             <element signature="e#6400#6657#0" expanded="false" />
-            <element signature="e#6733#7148#0" expanded="false" />
           </folding>
         </state>
       </provider>
@@ -438,7 +432,6 @@
             <element signature="e#5826#6077#0" expanded="false" />
             <element signature="e#6145#6394#0" expanded="false" />
             <element signature="e#6400#6657#0" expanded="false" />
-            <element signature="e#6733#7148#0" expanded="false" />
           </folding>
         </state>
       </provider>
@@ -474,7 +467,6 @@
             <element signature="e#5826#6077#0" expanded="false" />
             <element signature="e#6145#6394#0" expanded="false" />
             <element signature="e#6400#6657#0" expanded="false" />
-            <element signature="e#6733#7148#0" expanded="false" />
           </folding>
         </state>
       </provider>
@@ -529,7 +521,6 @@
             <element signature="e#5826#6077#0" expanded="false" />
             <element signature="e#6145#6394#0" expanded="false" />
             <element signature="e#6400#6657#0" expanded="false" />
-            <element signature="e#6733#7148#0" expanded="false" />
           </folding>
         </state>
       </provider>
@@ -573,7 +564,6 @@
             <element signature="e#5826#6077#0" expanded="false" />
             <element signature="e#6145#6394#0" expanded="false" />
             <element signature="e#6400#6657#0" expanded="false" />
-            <element signature="e#6733#7148#0" expanded="false" />
           </folding>
         </state>
       </provider>
@@ -616,7 +606,6 @@
             <element signature="e#5826#6077#0" expanded="false" />
             <element signature="e#6145#6394#0" expanded="false" />
             <element signature="e#6400#6657#0" expanded="false" />
-            <element signature="e#6733#7148#0" expanded="false" />
           </folding>
         </state>
       </provider>
@@ -659,7 +648,6 @@
             <element signature="e#5826#6077#0" expanded="false" />
             <element signature="e#6145#6394#0" expanded="false" />
             <element signature="e#6400#6657#0" expanded="false" />
-            <element signature="e#6733#7148#0" expanded="false" />
           </folding>
         </state>
       </provider>
@@ -684,7 +672,6 @@
             <element signature="e#5826#6077#0" expanded="false" />
             <element signature="e#6145#6394#0" expanded="false" />
             <element signature="e#6400#6657#0" expanded="false" />
-            <element signature="e#6733#7148#0" expanded="false" />
           </folding>
         </state>
       </provider>
@@ -765,14 +752,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/src/extra_kernels.cl">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="295">
-          <caret line="44" column="0" lean-forward="true" selection-start-line="44" selection-start-column="0" selection-end-line="44" selection-end-column="0" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/src/lib.rs">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="119">
@@ -792,10 +771,18 @@
         </state>
       </provider>
     </entry>
+    <entry file="file://$PROJECT_DIR$/src/extra_kernels.cl">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="295">
+          <caret line="44" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="65" selection-end-column="0" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/src/network.rs">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="285">
-          <caret line="370" column="5" lean-forward="true" selection-start-line="370" selection-start-column="5" selection-end-line="370" selection-end-column="5" />
+        <state relative-caret-position="242">
+          <caret line="210" column="40" lean-forward="false" selection-start-line="210" selection-start-column="40" selection-end-line="210" selection-end-column="40" />
           <folding>
             <element signature="e#1679#1943#0" expanded="false" />
             <element signature="e#2073#4441#0" expanded="false" />
@@ -804,7 +791,6 @@
             <element signature="e#5826#6077#0" expanded="false" />
             <element signature="e#6145#6394#0" expanded="false" />
             <element signature="e#6400#6657#0" expanded="false" />
-            <element signature="e#6733#7148#0" expanded="false" />
           </folding>
         </state>
       </provider>

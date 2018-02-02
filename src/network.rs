@@ -208,7 +208,7 @@ impl<T: NetworkParameter + ::std::iter::Sum<T>> Network<T> {
     pub unsafe fn open(path: &str) -> Result<Network<T>, ::std::io::Error> {
         use std::fs::File;
 
-        let mut file = File::open(path).expect("Failed to open file");
+        let mut file = File::open(path)?;
 
         let layer_count = read_u64(&mut file)?;
 
