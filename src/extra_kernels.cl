@@ -36,18 +36,13 @@ kernel void {T}_sigmoid_prime_in_place(global {T}* C) {
 #define gz get_global_size(0)
 
 /// Calculate the sum of all the elements in the vector
-kernel void {T}_validate_sample(global const {T}* data, global const {T}* expected_data, global {T}* results, int count) {
-#if __OPENCL_VERSION__ < 200
-		local {T} temp[lz];
-#endif
+kernel void {T}_validate_sample(global const {T}* data, global const {T}* expected_data, global {T}* results, int count, local {T}* temp) {
+
 	{T} value = 0.0;
 	for (int globalIndex = i; globalIndex < count; globalIndex += gz) {
 		value += fabs(data[globalIndex] - expected_data[globalIndex]) > 0.5 ? 0.0 : 1.0;
 	}
 
-#if __OPENCL_VERSION__ >= 200
-	results[wgid] = work_group_reduce_sum(value);
-#else
 	temp[lid] = value;
 	barrier(CLK_LOCAL_MEM_FENCE);
 
@@ -60,8 +55,6 @@ kernel void {T}_validate_sample(global const {T}* data, global const {T}* expect
 	if (lid == 0) {
 		results[wgid] = temp[0];
 	}
-
-#endif
 }
 
 #undef gz

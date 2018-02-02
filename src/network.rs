@@ -17,6 +17,7 @@ use traits::{ NetworkParameter, RealParameter };
 use layer::Layer;
 
 use self::linear_algebra::get_cl_data;
+use self::linear_algebra::get_work_sizes;
 
 pub struct Sample<T: NetworkParameter> {
     pub in_data: Vector<T>,
@@ -278,41 +279,42 @@ impl<T> Network<T>
                             .arg_scl_named::<i32>("count", None)
                     );
                 }
-            )
-        }
-
-
-        let (queue, kernel_params) = get_cl_data::<T>();
-
-        let global_work_size = kernel_params.global_work_size;
-        let work_group_size = kernel_params.work_group_size;
-        let work_group_count = global_work_size / work_group_size;
-
-        if a.len() <= work_group_count { // No need to reduce?
-            let res: T = a.to_vec().iter().zip(b.to_vec().iter()).map(|(a, b)|
-                if abs_diff(*a, *b) > T::from_f64(0.5) {
-                    NetworkParameter::zero()
-                } else {
-                    NetworkParameter::one()
-                }
-            ).sum();
-            return res / T::from_usize(a.len())
-        }
-
-        unsafe {
+            );
             let kernel = KERNEL.as_mut().unwrap();
-            let mut tmp = Vector::<T>::uninitialized_lock_free(work_group_count, queue);
+
+            let kp = get_work_sizes(kernel);
+            let queue = get_cl_data::<T>();
+
+
+            if a.len() <= kp.work_group_count { // No need to reduce?
+                let res: T = a.to_vec().iter().zip(b.to_vec().iter()).map(|(a, b)|
+                    if abs_diff(*a, *b) > T::from_f64(0.5) {
+                        NetworkParameter::zero()
+                    } else {
+                        NetworkParameter::one()
+                    }
+                ).sum();
+                return res / T::from_usize(a.len())
+            }
+
+
+            let mut tmp = Vector::<T>::uninitialized_lock_free(kp.work_group_count, queue);
 
             kernel.set_arg_buf_named("data", Some(a.get_buf())).unwrap();
             kernel.set_arg_buf_named("expected_data", Some(b.get_buf())).unwrap();
             kernel.set_arg_buf_named("results", Some(tmp.get_buf_mut())).unwrap();
             kernel.set_arg_scl_named("count", a.len() as i32).unwrap();
+            kernel.set_arg_unchecked(4, ocl::enums::KernelArg::Local::<T>(&kp.work_group_size))
+                .unwrap();
 
+            let mut event = ocl::Event::empty();
             kernel.cmd()
-                .gws(global_work_size)
-                .lws(work_group_size)
+                .gws(kp.global_work_size)
+                .enew(&mut event)
+                .lws(kp.work_group_size)
                 .enq()
                 .unwrap();
+            event.wait_for().unwrap();
             let sum = tmp.to_vec().into_iter().sum::<T>();
             let d = T::from_usize(a.len());
 
@@ -361,7 +363,9 @@ fn activation_func_in_place<T: NetworkParameter>(mut data: Vector<T>) -> Vector<
 
         kernel.set_arg_buf_named("C", Some(data.get_buffer_mut())).unwrap();
 
-        kernel.cmd().gws(data.len()).enq().unwrap();
+        let mut event = ocl::Event::empty();
+        kernel.cmd().enew(&mut event).gws(data.len()).enq().unwrap();
+        event.wait_for().unwrap();
 
         data
     }
@@ -377,7 +381,9 @@ fn activation_func<T: NetworkParameter>(data: &Vector<T>) -> Vector<T> {
         kernel.set_arg_buf_named("C", Some(res.get_buffer_mut())).unwrap();
         kernel.set_arg_buf_named("B", Some(data.get_buffer())).unwrap();
 
-        kernel.cmd().gws(data.len()).enq().unwrap();
+        let mut event = ocl::Event::empty();
+        kernel.cmd().enew(&mut event).gws(data.len()).enq().unwrap();
+        event.wait_for().unwrap();
 
         res
     }
@@ -393,7 +399,9 @@ fn activation_func_prime<T: NetworkParameter>(data: &Vector<T>) -> Vector<T> {
         kernel.set_arg_buf_named("C", Some(res.get_buffer_mut())).unwrap();
         kernel.set_arg_buf_named("B", Some(data.get_buffer())).unwrap();
 
-        kernel.cmd().gws(data.len()).enq().unwrap();
+        let mut event = ocl::Event::empty();
+        kernel.cmd().enew(&mut event).gws(data.len()).enq().unwrap();
+        event.wait_for().unwrap();
 
         res
     }

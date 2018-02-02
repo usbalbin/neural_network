@@ -1,7 +1,7 @@
 
 extern crate linear_algebra;
 
-use ::std::ops::{Add, Sub, Mul};
+use ::std::ops::{ Add, Sub, Mul };
 use ::std::ops::{AddAssign, SubAssign, MulAssign};
 
 
