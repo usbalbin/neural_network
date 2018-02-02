@@ -224,6 +224,12 @@ impl<T: NetworkParameter + ::std::iter::Sum<T>> Network<T> {
             layers
         })
     }
+
+    pub fn get_layer_sizes(&self) -> Vec<usize>{
+        let mut res: Vec<usize> = self.layers.iter().map(|layer| layer.biases.len()).collect();
+        res.push(self.layers.last().unwrap().weights.get_col_count());
+        res
+    }
 }
 
 impl<T> Network<T>
