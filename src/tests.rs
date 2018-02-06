@@ -15,12 +15,10 @@ use self::linear_algebra::vector::*;
 fn test_validate() {
     let a = Vector::new(1.00001f32, 1);
     let b = Vector::new(0.00001f32, 1);
+    let c = Vector::new(0.00001f32, 1);
 
-
-    let s = Network::validate_sample_helper(a, &b);
-    println!("\n----------------");
-    println!("Res: {}", s);
-    println!("----------------");
+    assert_eq!(0.0, Network::validate_sample_helper(a, &b));
+    assert_eq!(1.0, Network::validate_sample_helper(b, &c));
 }
 
 #[test]
@@ -95,6 +93,35 @@ fn example_or<T>() -> Network<T>
         }
     ];
 
+    for _ in 0..68 {
+        n.learn(T::from_f64(0.5), &samples);
+    }
+    n
+}
+
+fn assert_simple_or<T>(n: &Network<T>)
+    where T:
+        RealParameter +
+        ::std::ops::Div<T, Output=T> +
+        ::std::ops::Neg<Output=T> +
+        PartialOrd +
+        ::std::iter::Sum
+{
+    let _0: T = NetworkParameter::zero();
+    let _1: T = NetworkParameter::one();
+
+    let low = |res: T| res < T::from_f64(0.1);
+    let hi = |res: T| !(res < T::from_f64(0.1));
+
+    test(vec![_0, _0, _0], n, &low);
+    test(vec![_0, _0, _1], n, &hi);
+    test(vec![_0, _1, _0], n, &hi);
+    test(vec![_0, _1, _1], n, &hi);
+    test(vec![_1, _0, _0], n, &hi);
+    test(vec![_1, _0, _1], n, &hi);
+    test(vec![_1, _1, _0], n, &hi);
+    test(vec![_1, _1, _1], n, &hi);
+
     let validation_samples = vec![
         Sample {
             in_data: Vector::from_vec(vec![_0, _0, _0]),
@@ -130,32 +157,10 @@ fn example_or<T>() -> Network<T>
         }
     ];
 
-    for _ in 0..68 {
-        n.learn(T::from_f64(0.5), &samples);
-        let (avg, min, max) = n.validate(&validation_samples);
-
-        println!("------------------------");
-        println!("\tAvg: {}", avg);
-        println!("\tmin: {}, max: {}", min, max);
-    }
-    n
-}
-
-fn assert_simple_or<T: NetworkParameter + PartialOrd + ::std::iter::Sum>(n: &Network<T>) {
-    let _0 = T::zero();
-    let _1 = T::one();
-
-    let low = |res: T| res < T::from_f64(0.1);
-    let hi = |res: T| !(res < T::from_f64(0.1));
-
-    test(vec![_0, _0, _0], n, &low);
-    test(vec![_0, _0, _1], n, &hi);
-    test(vec![_0, _1, _0], n, &hi);
-    test(vec![_0, _1, _1], n, &hi);
-    test(vec![_1, _0, _0], n, &hi);
-    test(vec![_1, _0, _1], n, &hi);
-    test(vec![_1, _1, _0], n, &hi);
-    test(vec![_1, _1, _1], n, &hi);
+    let (avg, min, max) = n.validate(&validation_samples);
+    assert_eq!(min, _1);
+    assert_eq!(max, _1);
+    assert!(avg > T::from_f64(0.99));
 }
 
 

@@ -238,8 +238,8 @@ impl<T> Network<T>
     /// Returns (avg, min, max)
     pub fn validate(&self, samples: &Vec<Sample<T>>) -> (T, T, T)
     {
-        let mut min: T = NetworkParameter::zero();
-        let mut max: T = NetworkParameter::one();
+        let mut min: T = NetworkParameter::one();
+        let mut max: T = NetworkParameter::zero();
         let mut avg: T = NetworkParameter::zero();
 
         for sample in samples.iter() {
