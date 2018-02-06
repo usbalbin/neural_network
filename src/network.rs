@@ -244,12 +244,15 @@ impl<T> Network<T>
 
         for sample in samples.iter() {
             let val = self.validate_sample(sample);
+
             if val < min {
                 min = val;
             }
+
             if max < val {
                 max = val;
             }
+            
             avg += val;
         }
 

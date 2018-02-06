@@ -2,9 +2,7 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="22cd30bc-7ca6-4ea5-bc5e-bbf98d779efa" name="Default" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
       <change beforePath="$PROJECT_DIR$/src/network.rs" afterPath="$PROJECT_DIR$/src/network.rs" />
-      <change beforePath="$PROJECT_DIR$/src/tests.rs" afterPath="$PROJECT_DIR$/src/tests.rs" />
     </list>
     <ignored path="$PROJECT_DIR$/target/" />
     <ignored path="$PROJECT_DIR$/out/" />
@@ -27,21 +25,21 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="Cargo.toml" pinned="false" current-in-tab="true">
+      <file leaf-file-name="Cargo.toml" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/Cargo.toml">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="34">
-              <caret line="2" column="16" lean-forward="true" selection-start-line="2" selection-start-column="16" selection-end-line="2" selection-end-column="16" />
+            <state relative-caret-position="136">
+              <caret line="8" column="14" lean-forward="true" selection-start-line="8" selection-start-column="14" selection-end-line="8" selection-end-column="14" />
               <folding />
             </state>
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="network.rs" pinned="false" current-in-tab="false">
+      <file leaf-file-name="network.rs" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/src/network.rs">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="307">
-              <caret line="242" column="50" lean-forward="false" selection-start-line="242" selection-start-column="50" selection-end-line="242" selection-end-column="50" />
+            <state relative-caret-position="358">
+              <caret line="254" column="12" lean-forward="false" selection-start-line="254" selection-start-column="12" selection-end-line="254" selection-end-column="12" />
               <folding>
                 <element signature="e#1679#1943#0" expanded="false" />
                 <element signature="e#2073#4441#0" expanded="false" />
@@ -104,8 +102,8 @@
       <file leaf-file-name="extra_kernels.cl" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/src/extra_kernels.cl">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="748">
-              <caret line="44" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="65" selection-end-column="0" />
+            <state relative-caret-position="578">
+              <caret line="43" column="5" lean-forward="true" selection-start-line="43" selection-start-column="5" selection-end-line="43" selection-end-column="5" />
               <folding />
             </state>
           </provider>
@@ -163,8 +161,8 @@
         <option value="$PROJECT_DIR$/src/traits.rs" />
         <option value="$PROJECT_DIR$/Cargo.toml" />
         <option value="$PROJECT_DIR$/src/extra_kernels.cl" />
-        <option value="$PROJECT_DIR$/src/network.rs" />
         <option value="$PROJECT_DIR$/src/tests.rs" />
+        <option value="$PROJECT_DIR$/src/network.rs" />
       </list>
     </option>
   </component>
@@ -741,37 +739,11 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/src/extra_kernels.cl">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="748">
-          <caret line="44" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="65" selection-end-column="0" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/src/layer.rs">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="238">
           <caret line="14" column="86" lean-forward="false" selection-start-line="14" selection-start-column="76" selection-end-line="14" selection-end-column="86" />
           <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/src/network.rs">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="307">
-          <caret line="242" column="50" lean-forward="false" selection-start-line="242" selection-start-column="50" selection-end-line="242" selection-end-column="50" />
-          <folding>
-            <element signature="e#1679#1943#0" expanded="false" />
-            <element signature="e#2073#4441#0" expanded="false" />
-            <element signature="e#4564#4916#0" expanded="false" />
-            <element signature="e#4922#5052#0" expanded="false" />
-            <element signature="e#5125#5820#0" expanded="false" />
-            <element signature="e#5826#6077#0" expanded="false" />
-            <element signature="e#6145#6394#0" expanded="false" />
-            <element signature="e#6400#6657#0" expanded="false" />
-            <element signature="e#6733#7119#0" expanded="false" />
-          </folding>
         </state>
       </provider>
     </entry>
@@ -797,9 +769,35 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/Cargo.toml">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="34">
-          <caret line="2" column="16" lean-forward="true" selection-start-line="2" selection-start-column="16" selection-end-line="2" selection-end-column="16" />
+        <state relative-caret-position="136">
+          <caret line="8" column="14" lean-forward="true" selection-start-line="8" selection-start-column="14" selection-end-line="8" selection-end-column="14" />
           <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/extra_kernels.cl">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="578">
+          <caret line="43" column="5" lean-forward="true" selection-start-line="43" selection-start-column="5" selection-end-line="43" selection-end-column="5" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/network.rs">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="358">
+          <caret line="254" column="12" lean-forward="false" selection-start-line="254" selection-start-column="12" selection-end-line="254" selection-end-column="12" />
+          <folding>
+            <element signature="e#1679#1943#0" expanded="false" />
+            <element signature="e#2073#4441#0" expanded="false" />
+            <element signature="e#4564#4916#0" expanded="false" />
+            <element signature="e#4922#5052#0" expanded="false" />
+            <element signature="e#5125#5820#0" expanded="false" />
+            <element signature="e#5826#6077#0" expanded="false" />
+            <element signature="e#6145#6394#0" expanded="false" />
+            <element signature="e#6400#6657#0" expanded="false" />
+            <element signature="e#6733#7119#0" expanded="false" />
+          </folding>
         </state>
       </provider>
     </entry>
