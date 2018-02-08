@@ -27,7 +27,7 @@ fn test_simple_or() {
     assert_simple_or(&n);
 }
 
-#[test]
+//#[test]
 fn test_save_open() {
     let path = "network.tmp";
 
@@ -93,11 +93,17 @@ fn example_or<T>() -> Network<T>
         }
     ];
 
+    let validation_samples = samples.clone();
+
     n.adam(
-        T::from_f64(0.5), T::from_f64(0.9), T::from_f64(0.999), T::from_f64(1.0e-8),
+        T::from_f64(0.1), T::from_f64(0.9), T::from_f64(0.999), T::from_f64(1.0e-8),
         20, 8,
         &mut samples,
-        |_, _|{});
+        |n, _|
+            {
+                let (avg, _, _) = n.validate(&validation_samples);
+                println!("avg: {}", avg);
+            });
     n
 }
 

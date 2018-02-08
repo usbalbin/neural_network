@@ -42,7 +42,11 @@ impl<'a, 'b> DerefMut for KernelsGuard<'a, 'b> {
 struct Kernels{
     sigmoid_in_place: ocl::Kernel,
     sigmoid: ocl::Kernel,
-    sigmoid_prime: ocl::Kernel
+    sigmoid_prime: ocl::Kernel,
+
+    relu_in_place: ocl::Kernel,
+    relu: ocl::Kernel,
+    relu_prime: ocl::Kernel
 }
 
 
@@ -77,10 +81,30 @@ fn get_kernels<'a, T: NetworkParameter>() -> KernelsGuard<'a, 'static> {
                 .arg_buf_named::<T, ocl::Buffer<T>>("C", None)
                 .arg_buf_named::<T, ocl::Buffer<T>>("B", None);
 
+
+            let relu_in_place = linear_algebra::create_kernel::<T>(&format!("{}_{}", T::type_to_str(), "relu_in_place"))
+                .arg_buf_named::<T, ocl::Buffer<T>>("C", None)
+                .arg_scl_named::<T>("A", None);
+
+            let relu = linear_algebra::create_kernel::<T>(&format!("{}_{}", T::type_to_str(), "relu"))
+                .arg_buf_named::<T, ocl::Buffer<T>>("C", None)
+                .arg_scl_named::<T>("A", None)
+                .arg_buf_named::<T, ocl::Buffer<T>>("B", None);
+
+
+            let relu_prime = linear_algebra::create_kernel::<T>(&format!("{}_{}", T::type_to_str(), "relu_prime"))
+                .arg_buf_named::<T, ocl::Buffer<T>>("C", None)
+                .arg_scl_named::<T>("A", None)
+                .arg_buf_named::<T, ocl::Buffer<T>>("B", None);
+
             Kernels{
                 sigmoid,
                 sigmoid_in_place,
-                sigmoid_prime
+                sigmoid_prime,
+
+                relu_in_place,
+                relu,
+                relu_prime
             }
         };
         data.insert(ty, kernels);

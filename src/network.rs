@@ -66,7 +66,7 @@ impl<T: NetworkParameter + ::std::iter::Sum<T>> Network<T> {
 
         let mut data = input;
         for layer in self.layers.iter() {
-            data = activation_func_in_place((&data * &layer.weights) + &layer.biases);
+            data = relu_in_place((&data * &layer.weights) + &layer.biases, T::from_f64(0.001));
         }
 
         data
@@ -78,6 +78,12 @@ impl<T: NetworkParameter + ::std::iter::Sum<T>> Network<T> {
     ///
     pub fn sgd<P: FnMut(&mut Network<T>, &[Sample<T>])>(&mut self, learning_rate: T, epoch_count: usize, mini_batch_size: usize, samples: &mut [Sample<T>], mut post_batch_callback: P) {
         use self::rand::Rng;
+        debug_assert!(samples.iter()
+            .all(|sample|
+                sample.expected_result.len() == *self.get_layer_sizes().last().unwrap()
+            )
+        );
+
         for _ in 0..epoch_count {
             self.random_generator.shuffle(samples);
             for batch in samples.chunks(mini_batch_size) {
@@ -87,10 +93,8 @@ impl<T: NetworkParameter + ::std::iter::Sum<T>> Network<T> {
         }
     }
 
-
-    /// learn() trains network with given samples at specified rate.
-    /// great care needs to be taken when selecting learning_rate
-    pub fn learn_batch(&mut self, learning_rate: T, samples: &[Sample<T>]) {
+    /// Trains network with given samples at specified rate.
+    fn learn_batch(&mut self, learning_rate: T, samples: &[Sample<T>]) {
         let mut gradients_biases = Vec::with_capacity(self.layers.len());
         let mut gradients_weights = Vec::with_capacity(self.layers.len());
 
@@ -130,7 +134,7 @@ impl<T: NetworkParameter + ::std::iter::Sum<T>> Network<T> {
             let raw = (&sample.in_data * &first_layer.weights) + &first_layer.biases;
 
             activations.push(
-                activation_func(&raw)
+                relu(&raw, T::from_f64(0.001))
             );
 
             raw_data.push(raw);
@@ -139,7 +143,7 @@ impl<T: NetworkParameter + ::std::iter::Sum<T>> Network<T> {
                 let raw = (activations.last().unwrap() * &layer.weights) + &layer.biases;
 
                 activations.push(
-                    activation_func(&raw)
+                    relu(&raw, T::from_f64(0.001))
                 );
 
                 raw_data.push(raw);
@@ -160,8 +164,8 @@ impl<T: NetworkParameter + ::std::iter::Sum<T>> Network<T> {
                     &sample.in_data
                 };
 
-                delta = out - &sample.expected_result;//Cross entropy cost
-                //delta = (out - sample.expectedResult) * activationFuncPrime(rawData.back());//Quadratic cost
+                //delta = out - &sample.expected_result;//Cross entropy cost
+                delta = &(out - &sample.expected_result) * &relu_prime(raw_data.last().unwrap(), T::from_f64(0.001));//Quadratic cost
 
                 *gradients_biases.last_mut().unwrap() += &delta;
                 *gradients_weights.last_mut().unwrap() += &mul_column_row(in_, &delta);
@@ -171,7 +175,7 @@ impl<T: NetworkParameter + ::std::iter::Sum<T>> Network<T> {
                 for i in (1..(self.layers.len() - 1)).rev() {
                     let ref in_ = activations[i - 1];
 
-                    delta = &mul_transpose_mat(&delta, &self.layers[i + 1].weights) * &activation_func_prime(&raw_data[i]);
+                    delta = &mul_transpose_mat(&delta, &self.layers[i + 1].weights) * &relu_prime(&raw_data[i], T::from_f64(0.001));
 
                     gradients_biases[i] += &delta;
                     gradients_weights[i] += &mul_column_row(in_, &delta);
@@ -181,9 +185,9 @@ impl<T: NetworkParameter + ::std::iter::Sum<T>> Network<T> {
             if activations.len() > 1 {
                 let ref in_ = sample.in_data;
 
-                delta = &mul_transpose_mat(&delta, &self.layers[1].weights) * &activation_func_prime(&raw_data[0]);
+                delta = &mul_transpose_mat(&delta, &self.layers[1].weights) * &relu_prime(&raw_data[0], T::from_f64(0.001));
                 gradients_biases[0] += &delta;
-                gradients_weights[0] += &mul_column_row(in_, &delta);//TODO: Check if "in" and "delta" should be swapped
+                gradients_weights[0] += &mul_column_row(in_, &delta);
             }
         }
     }
@@ -263,6 +267,12 @@ impl<T> Network<T>
         samples: &mut [Sample<T>], mut post_batch_callback: P)
     {
         use self::rand::Rng;
+        debug_assert!(samples.iter()
+            .all(|sample|
+                sample.expected_result.len() == *self.get_layer_sizes().last().unwrap()
+            )
+        );
+
         let _0: T = NetworkParameter::zero();
         let _1: T = NetworkParameter::one();
 
@@ -433,7 +443,7 @@ impl<T> Network<T>
     }
 }
 
-fn activation_func_in_place<T: NetworkParameter>(mut data: Vector<T>) -> Vector<T> {
+fn sigmoid_in_place<T: NetworkParameter>(mut data: Vector<T>) -> Vector<T> {
     let kernel = &mut ::get_kernels::<T>().sigmoid_in_place;
 
     unsafe {
@@ -447,7 +457,7 @@ fn activation_func_in_place<T: NetworkParameter>(mut data: Vector<T>) -> Vector<
     }
 }
 
-fn activation_func<T: NetworkParameter>(data: &Vector<T>) -> Vector<T> {
+fn sigmoid<T: NetworkParameter>(data: &Vector<T>) -> Vector<T> {
     let kernel = &mut ::get_kernels::<T>().sigmoid;
 
     unsafe {
@@ -464,7 +474,7 @@ fn activation_func<T: NetworkParameter>(data: &Vector<T>) -> Vector<T> {
     }
 }
 
-fn activation_func_prime<T: NetworkParameter>(data: &Vector<T>) -> Vector<T> {
+fn sigmoid_prime<T: NetworkParameter>(data: &Vector<T>) -> Vector<T> {
     let kernel = &mut ::get_kernels::<T>().sigmoid_prime;
 
     unsafe {
@@ -481,8 +491,56 @@ fn activation_func_prime<T: NetworkParameter>(data: &Vector<T>) -> Vector<T> {
     }
 }
 
+fn relu_in_place<T: NetworkParameter>(mut data: Vector<T>, epsilon: T) -> Vector<T> {
+    let kernel = &mut ::get_kernels::<T>().relu_in_place;
 
+    unsafe {
+        kernel.set_arg_buf_named("C", Some(data.get_buffer_mut())).unwrap();
+        kernel.set_arg_scl_named("A", epsilon).unwrap();
 
+        let mut event = ocl::Event::empty();
+        kernel.cmd().enew(&mut event).gws(data.len()).enq().unwrap();
+        event.wait_for().unwrap();
+
+        data
+    }
+}
+
+fn relu<T: NetworkParameter>(data: &Vector<T>, epsilon: T) -> Vector<T> {
+    let kernel = &mut ::get_kernels::<T>().relu;
+
+    unsafe {
+        let mut res = Vector::uninitialized(data.len());
+
+        kernel.set_arg_buf_named("C", Some(res.get_buffer_mut())).unwrap();
+        kernel.set_arg_buf_named("B", Some(data.get_buffer())).unwrap();
+        kernel.set_arg_scl_named("A", epsilon).unwrap();
+
+        let mut event = ocl::Event::empty();
+        kernel.cmd().enew(&mut event).gws(data.len()).enq().unwrap();
+        event.wait_for().unwrap();
+
+        res
+    }
+}
+
+fn relu_prime<T: NetworkParameter>(data: &Vector<T>, epsilon: T) -> Vector<T> {
+    let kernel = &mut ::get_kernels::<T>().relu_prime;
+
+    unsafe {
+        let mut res = Vector::uninitialized(data.len());
+
+        kernel.set_arg_buf_named("C", Some(res.get_buffer_mut())).unwrap();
+        kernel.set_arg_buf_named("B", Some(data.get_buffer())).unwrap();
+        kernel.set_arg_scl_named("A", epsilon).unwrap();
+
+        let mut event = ocl::Event::empty();
+        kernel.cmd().enew(&mut event).gws(data.len()).enq().unwrap();
+        event.wait_for().unwrap();
+
+        res
+    }
+}
 
 fn abs_diff<T: NetworkParameter + ::std::ops::Sub<T, Output=T> + ::std::ops::Neg<Output=T> + ::std::cmp::PartialOrd>(a: T, b: T) -> T {
     let diff = a - b;

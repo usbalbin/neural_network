@@ -2,6 +2,8 @@
 
 #if defined(IS_FLOAT) || defined(IS_FLOAT)
 
+//Sigmoid
+
 {T} {T}_sig_helper({T} x) {
     return ({T})(1) / (({T})(1) + exp(-x));
 }
@@ -25,7 +27,18 @@ kernel void {T}_sigmoid_prime_in_place(global {T}* C) {
 }
 
 
+//Relu
+kernel void {T}_relu(global {T}* C, {T} A, global {T}* B) {
+    C[i] = max(A, B[i]);
+}
 
+kernel void {T}_relu_in_place(global {T}* C, {T} A) {
+    C[i] = max(A, C[i]);
+}
+
+kernel void {T}_relu_prime(global {T}* C, {T} A, global {T}* B) {
+    C[i] = B[i] > 0 ? 1 : A;
+}
 
 
 
