@@ -1,9 +1,10 @@
 [package]
 name = "neural_network"
-version = "0.1.1"
+version = "0.1.2"
 authors = ["usbalbin <albin9604@gmail.com>"]
 
 [dependencies]
 linear_algebra = { git = "https://github.com/usbalbin/linear_algebra.git", branch = "OpenCL-accelerated" }
 rand = "0.4.1"
 ocl = "0.16.0"
+lazy_static = "1.0.0"

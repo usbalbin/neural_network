@@ -58,7 +58,7 @@ fn example_or<T>() -> Network<T>
     let _0: T = NetworkParameter::zero();
     let _1: T = NetworkParameter::one();
 
-    let samples = vec![
+    let mut samples = vec![
         Sample {
             in_data: Vector::from_vec(vec![_0, _0, _0]),
             expected_result: Vector::from_vec(vec![_0])
@@ -93,9 +93,16 @@ fn example_or<T>() -> Network<T>
         }
     ];
 
-    for _ in 0..68 {
-        n.learn(T::from_f64(0.5), &samples);
-    }
+    let validation_samples = samples.clone();
+
+    n.adam(
+        T::from_f64(0.5), T::from_f64(0.9), T::from_f64(0.999), T::from_f64(1.0e-8),
+        20, 8,
+        &mut samples,
+        |n, _|{
+        let (avg, min, max) = n.validate(&validation_samples);
+        println!("avg: {}, min: {}, max: {}", avg, min, max)
+    });
     n
 }
 

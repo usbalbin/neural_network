@@ -7,7 +7,10 @@ use ::std::ops::{AddAssign, SubAssign, MulAssign};
 
 pub trait RealParameter:
 	NetworkParameter + self::linear_algebra::traits::Real
-{}
+{
+	fn square_root(&self) -> Self;
+	fn pow(&self, exp: Self) -> Self;
+}
 
 pub trait NetworkParameter:
 	self::linear_algebra::traits::Parameter +
@@ -41,7 +44,14 @@ impl_parameter!(u8, i8, u16, i16, u32, i32, u64, i64, usize, isize, f32, f64);
 
 macro_rules! impl_real_parameter {
     ($( $ty:ident ),+) => {
-        $( impl RealParameter for $ty {} )+
+        $( impl RealParameter for $ty {
+        	fn square_root(&self) -> $ty {
+        		self.sqrt()
+        	}
+        	fn pow(&self, exp: $ty) -> $ty {
+        		self.powf(exp)
+        	}
+        } )+
     }
 }
 

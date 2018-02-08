@@ -3,8 +3,6 @@ extern crate rand;
 extern crate linear_algebra;
 extern crate ocl;
 
-
-
 use self::rand::distributions::{ Normal, IndependentSample };
 
 use self::linear_algebra::util::*;
@@ -19,6 +17,7 @@ use layer::Layer;
 use self::linear_algebra::get_cl_data;
 use self::linear_algebra::get_work_sizes;
 
+#[derive(Clone)]
 pub struct Sample<T: NetworkParameter> {
     pub in_data: Vector<T>,
     pub expected_result: Vector<T>
@@ -27,7 +26,8 @@ pub struct Sample<T: NetworkParameter> {
 use ::std::ops::Div;
 
 pub struct Network<T: NetworkParameter> {
-    layers: Vec<Layer<T>>
+    layers: Vec<Layer<T>>,
+    random_generator: rand::StdRng
 }
 
 ///
@@ -43,16 +43,20 @@ impl<T: NetworkParameter + ::std::iter::Sum<T>> Network<T> {
         let seed: &[_] = &[1, 2, 3, 4];
         let mut random_generator: rand::StdRng = rand::SeedableRng::from_seed(seed);
         let normal_distribute = Normal::new(0.0, 1.0);
-        let mut distribution = || normal_distribute.ind_sample(&mut random_generator);
-
         let mut layers = Vec::with_capacity(layer_sizes.len());
-        for data in layer_sizes.windows(2) {
-            let (input_count, node_count) = (data[0], data[1]);
-            layers.push(Layer::new(&mut distribution, input_count, node_count));
+
+        {
+            let mut distribution = || normal_distribute.ind_sample(&mut random_generator);
+
+            for data in layer_sizes.windows(2) {
+                let (input_count, node_count) = (data[0], data[1]);
+                layers.push(Layer::new(&mut distribution, input_count, node_count));
+            }
         }
 
         Network {
-            layers
+            layers,
+            random_generator
         }
     }
 
@@ -66,6 +70,44 @@ impl<T: NetworkParameter + ::std::iter::Sum<T>> Network<T> {
         }
 
         data
+    }
+
+    ///
+    /// Learn samples by using stochastic gradient descent. Specified callback
+    /// will be called after every mini batch has been processed.
+    ///
+    pub fn learn<P: FnMut(&mut Network<T>, &[Sample<T>])>(&mut self, learning_rate: T, epoch_count: usize, mini_batch_size: usize, samples: &mut [Sample<T>], mut post_batch_callback: P) {
+        use self::rand::Rng;
+        for _ in 0..epoch_count {
+            self.random_generator.shuffle(samples);
+            for batch in samples.chunks(mini_batch_size) {
+                self.learn_batch(learning_rate, &batch);
+                post_batch_callback(self, batch);
+            }
+        }
+    }
+
+
+    /// learn() trains network with given samples at specified rate.
+    /// great care needs to be taken when selecting learning_rate
+    pub fn learn_batch(&mut self, learning_rate: T, samples: &[Sample<T>]) {
+        let mut gradients_biases = Vec::with_capacity(self.layers.len());
+        let mut gradients_weights = Vec::with_capacity(self.layers.len());
+
+
+        for i in 0..self.layers.len() {
+            gradients_biases.push(Vector::new(T::zero(), self.layers[i].biases.len()));
+            gradients_weights.push(Matrix::new(T::zero(),
+                self.layers[i].weights.get_row_count(),
+                self.layers[i].weights.get_col_count()
+            ));
+        }
+
+        for sample in samples {
+            self.back_propagate(sample, &mut gradients_weights, &mut gradients_biases);
+        }
+
+        self.apply_gradients(learning_rate, gradients_weights, gradients_biases);
     }
 
     fn back_propagate(&self, sample: &Sample<T>, gradients_weights: &mut Vec<Matrix<T>>, gradients_biases: &mut Vec<Vector<T>>) {
@@ -150,28 +192,6 @@ impl<T: NetworkParameter + ::std::iter::Sum<T>> Network<T> {
         }
     }
 
-    /// learn() trains network with given samples at specified rate.
-    /// great care needs to be taken when selecting learning_rate
-    pub fn learn(&mut self, learning_rate: T, samples: &Vec<Sample<T>>) {
-        let mut gradients_biases = Vec::with_capacity(self.layers.len());
-        let mut gradients_weights = Vec::with_capacity(self.layers.len());
-
-
-        for i in 0..self.layers.len() {
-            gradients_biases.push(Vector::new(T::zero(), self.layers[i].biases.len()));
-            gradients_weights.push(Matrix::new(T::zero(),
-                self.layers[i].weights.get_row_count(),
-                self.layers[i].weights.get_col_count()
-            ));
-        }
-
-        for sample in samples {
-            self.back_propagate(sample, &mut gradients_weights, &mut gradients_biases);
-        }
-
-        self.apply_gradients(learning_rate, gradients_weights, gradients_biases);
-    }
-
     /// Save Network to specified path.
     /// NOTE! The file will be encoded in the current systems endianness
     ///
@@ -220,8 +240,12 @@ impl<T: NetworkParameter + ::std::iter::Sum<T>> Network<T> {
             );
         }
 
+        let seed: &[_] = &[1, 2, 3, 4];
+        let random_generator: rand::StdRng = rand::SeedableRng::from_seed(seed);
+
         Ok(Network {
-            layers
+            layers,
+            random_generator
         })
     }
 
@@ -235,6 +259,87 @@ impl<T: NetworkParameter + ::std::iter::Sum<T>> Network<T> {
 impl<T> Network<T>
     where T: RealParameter + ::std::cmp::PartialOrd + ::std::iter::Sum + Div<T, Output=T> + ::std::ops::Neg<Output=T>
 {
+
+    // TODO: Add nice description
+    /// Recommended parameters alpha = 1e-3, beta1 = 0.9, beta2 = 0.999, and eps = 1e-8
+    pub fn adam<P: FnMut(&mut Network<T>, &[Sample<T>])>(
+        &mut self, alpha: T, beta1: T, beta2: T, epsilon: T, epoch_count: usize, mini_batch_size: usize,
+        samples: &mut [Sample<T>], mut post_batch_callback: P)
+    {
+        use self::rand::Rng;
+        let _0: T = NetworkParameter::zero();
+        let _1: T = NetworkParameter::one();
+
+        for epoch in 0..epoch_count {
+            let t = epoch + 1;
+            self.random_generator.shuffle(samples);
+
+            for batch in samples.chunks(mini_batch_size) {
+                let mut gradients_biases = Vec::with_capacity(self.layers.len());
+                let mut gradients_weights = Vec::with_capacity(self.layers.len());
+
+                let mut biases_momentum = Vec::with_capacity(self.layers.len());
+                let mut weights_momentum = Vec::with_capacity(self.layers.len());
+
+                let mut biases_velocity = Vec::with_capacity(self.layers.len());
+                let mut weights_velocity = Vec::with_capacity(self.layers.len());
+
+
+                for i in 0..self.layers.len() {
+                    let bias_count = self.layers[i].biases.len();
+                    let row_count = self.layers[i].weights.get_row_count();
+                    let col_count = self.layers[i].weights.get_col_count();
+
+                    let zero_vec = Vector::new(_0, bias_count);
+                    let zero_mat = Matrix::new(_0, row_count, col_count);
+
+                    gradients_biases.push(zero_vec.clone());
+                    gradients_weights.push(zero_mat.clone());
+
+                    biases_momentum.push(zero_vec.clone());
+                    weights_momentum.push(zero_mat.clone());
+
+                    biases_velocity.push(zero_vec);
+                    weights_velocity.push(zero_mat);
+                }
+
+                for sample in batch.iter() {
+                    self.back_propagate(sample, &mut gradients_weights, &mut gradients_biases);
+                }
+
+                // ---------------------------------------------------------------------------------
+
+
+
+
+                for layer in 0..self.layers.len() {
+                    biases_momentum[layer] = (&biases_momentum[layer] * beta1) + &(&gradients_biases[layer] * (_1 - beta1));
+                    biases_velocity[layer] = (&biases_velocity[layer] * beta2) + &(gradients_biases[layer].squared() * (_1 - beta2));
+
+                    let corrected_momentum = &biases_momentum[layer] / (_1 - beta1.pow(T::from_usize(t)));
+                    let corrected_velocity = &biases_velocity[layer] / (_1 - beta2.pow(T::from_usize(t)));
+
+                    self.layers[layer].biases -= &(&(corrected_momentum * alpha) / &corrected_velocity.sqrted().add_scalar(epsilon));
+                }
+
+                for layer in 0..self.layers.len() {
+                    weights_momentum[layer] = (&weights_momentum[layer] * beta1) + &(&gradients_weights[layer] * (_1 - beta1));
+                    weights_velocity[layer] = (&weights_velocity[layer] * beta2) + &(gradients_weights[layer].squared() * (_1 - beta2));
+
+                    let corrected_momentum = &weights_momentum[layer] / (_1 - beta1.pow(T::from_usize(t)));
+                    let corrected_velocity = &weights_velocity[layer] / (_1 - beta2.pow(T::from_usize(t)));
+
+                    self.layers[layer].weights -= &((corrected_momentum * alpha).elem_wise_div(&corrected_velocity.sqrted().add_scalar(epsilon)));
+                }
+
+                // ---------------------------------------------------------------------------------
+
+                post_batch_callback(self, batch);
+            }
+        }
+    }
+
+
     /// Returns (avg, min, max)
     pub fn validate(&self, samples: &Vec<Sample<T>>) -> (T, T, T)
     {
@@ -252,7 +357,7 @@ impl<T> Network<T>
             if max < val {
                 max = val;
             }
-            
+
             avg += val;
         }
 
@@ -332,44 +437,10 @@ impl<T> Network<T>
     }
 }
 
-macro_rules! helper {
-    ($kernel:ident, $t:ty) => ();
-    ($kernel:ident, $t:ty, $arg:expr) => {
-        $kernel = $kernel.arg_buf_named::<$t, ocl::Buffer<$t>>($arg, None);
-    };
-    ($kernel:ident, $t:ty, $arg:expr, $($args:expr),+) => {
-        helper!($kernel, $t, $arg);//$kernel.set_arg_buf_named::<$t, ocl::Buffer<$t>>($arg, None).unwrap();
-        helper!($kernel, $t, $($args),*)
-    };
-}
-
-macro_rules! kernel_helper {
-    ($kernel_name:expr, $t:ty, $($args:expr),* ) => {
-
-        static mut KERNEL: Option<ocl::Kernel> = None;
-        static mut INIT_ONCE: ::std::sync::Once = ::std::sync::ONCE_INIT;
-
-        unsafe {
-            INIT_ONCE.call_once(
-                || {
-                    KERNEL = Some(
-                        {
-                            let mut kernel = linear_algebra::create_kernel::<$t>($kernel_name);
-                            helper!(kernel, $t, $($args),*);
-                            kernel
-                        }
-                    );
-                }
-            )
-        }
-    };
-}
-
 fn activation_func_in_place<T: NetworkParameter>(mut data: Vector<T>) -> Vector<T> {
-    kernel_helper!(&format!("{}_{}", T::type_to_str(), "sigmoid_in_place"), T, "C");
-    unsafe {
-        let kernel = KERNEL.as_mut().unwrap();
+    let kernel = &mut ::get_kernels::<T>().sigmoid_in_place;
 
+    unsafe {
         kernel.set_arg_buf_named("C", Some(data.get_buffer_mut())).unwrap();
 
         let mut event = ocl::Event::empty();
@@ -381,11 +452,10 @@ fn activation_func_in_place<T: NetworkParameter>(mut data: Vector<T>) -> Vector<
 }
 
 fn activation_func<T: NetworkParameter>(data: &Vector<T>) -> Vector<T> {
-    kernel_helper!(&format!("{}_{}", T::type_to_str(), "sigmoid"), T, "C", "B");
+    let kernel = &mut ::get_kernels::<T>().sigmoid;
 
     unsafe {
         let mut res = Vector::uninitialized(data.len());
-        let kernel = KERNEL.as_mut().unwrap();
 
         kernel.set_arg_buf_named("C", Some(res.get_buffer_mut())).unwrap();
         kernel.set_arg_buf_named("B", Some(data.get_buffer())).unwrap();
@@ -399,11 +469,10 @@ fn activation_func<T: NetworkParameter>(data: &Vector<T>) -> Vector<T> {
 }
 
 fn activation_func_prime<T: NetworkParameter>(data: &Vector<T>) -> Vector<T> {
-    kernel_helper!(&format!("{}_{}", T::type_to_str(), "sigmoid_prime"), T, "C", "B");
+    let kernel = &mut ::get_kernels::<T>().sigmoid_prime;
 
     unsafe {
         let mut res = Vector::uninitialized(data.len());
-        let kernel = KERNEL.as_mut().unwrap();
 
         kernel.set_arg_buf_named("C", Some(res.get_buffer_mut())).unwrap();
         kernel.set_arg_buf_named("B", Some(data.get_buffer())).unwrap();
@@ -415,6 +484,9 @@ fn activation_func_prime<T: NetworkParameter>(data: &Vector<T>) -> Vector<T> {
         res
     }
 }
+
+
+
 
 fn abs_diff<T: NetworkParameter + ::std::ops::Sub<T, Output=T> + ::std::ops::Neg<Output=T> + ::std::cmp::PartialOrd>(a: T, b: T) -> T {
     let diff = a - b;
