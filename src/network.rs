@@ -76,7 +76,7 @@ impl<T: NetworkParameter + ::std::iter::Sum<T>> Network<T> {
     /// Learn samples by using stochastic gradient descent. Specified callback
     /// will be called after every mini batch has been processed.
     ///
-    pub fn learn<P: FnMut(&mut Network<T>, &[Sample<T>])>(&mut self, learning_rate: T, epoch_count: usize, mini_batch_size: usize, samples: &mut [Sample<T>], mut post_batch_callback: P) {
+    pub fn sgd<P: FnMut(&mut Network<T>, &[Sample<T>])>(&mut self, learning_rate: T, epoch_count: usize, mini_batch_size: usize, samples: &mut [Sample<T>], mut post_batch_callback: P) {
         use self::rand::Rng;
         for _ in 0..epoch_count {
             self.random_generator.shuffle(samples);
@@ -107,7 +107,13 @@ impl<T: NetworkParameter + ::std::iter::Sum<T>> Network<T> {
             self.back_propagate(sample, &mut gradients_weights, &mut gradients_biases);
         }
 
-        self.apply_gradients(learning_rate, gradients_weights, gradients_biases);
+        for (layer, gradient_bias) in self.layers.iter_mut().zip(gradients_biases.into_iter()) {
+            layer.biases -= &(gradient_bias * learning_rate);
+        }
+
+        for (layer, gradient_weight) in self.layers.iter_mut().zip(gradients_weights.into_iter()) {
+            layer.weights -= &(gradient_weight * learning_rate);
+        }
     }
 
     fn back_propagate(&self, sample: &Sample<T>, gradients_weights: &mut Vec<Matrix<T>>, gradients_biases: &mut Vec<Vector<T>>) {
@@ -179,16 +185,6 @@ impl<T: NetworkParameter + ::std::iter::Sum<T>> Network<T> {
                 gradients_biases[0] += &delta;
                 gradients_weights[0] += &mul_column_row(in_, &delta);//TODO: Check if "in" and "delta" should be swapped
             }
-        }
-    }
-
-    fn apply_gradients(&mut self, learning_rate: T, gradients_weights: Vec<Matrix<T>>, gradients_biases: Vec<Vector<T>>) {
-        for (layer, gradient_bias) in self.layers.iter_mut().zip(gradients_biases.into_iter()) {
-            layer.biases -= &(gradient_bias * learning_rate);
-        }
-
-        for (layer, gradient_weight) in self.layers.iter_mut().zip(gradients_weights.into_iter()) {
-            layer.weights -= &(gradient_weight * learning_rate);
         }
     }
 

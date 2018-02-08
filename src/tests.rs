@@ -93,16 +93,11 @@ fn example_or<T>() -> Network<T>
         }
     ];
 
-    let validation_samples = samples.clone();
-
     n.adam(
         T::from_f64(0.5), T::from_f64(0.9), T::from_f64(0.999), T::from_f64(1.0e-8),
         20, 8,
         &mut samples,
-        |n, _|{
-        let (avg, min, max) = n.validate(&validation_samples);
-        println!("avg: {}, min: {}, max: {}", avg, min, max)
-    });
+        |_, _|{});
     n
 }
 
